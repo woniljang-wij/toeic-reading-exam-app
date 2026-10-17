@@ -1,0 +1,32 @@
+# Build output and package caches
+**/bin/
+**/obj/
+**/build/
+**/.dart_tool/
+**/.flutter-plugins-dependencies
+**/packages/
+**/node_modules/
+
+# Local IDE and operating-system files
+**/.idea/
+**/.vs/
+**/__MACOSX/
+.DS_Store
+Thumbs.db
+
+# Machine-specific configuration and credentials
+**/appsettings.Staging.json
+**/secrets.json
+*.user
+*.suo
+*.pfx
+*.publishsettings
+
+# Supplied exam documents and local database files
+*.docx
+*.pdf
+*.mdf
+*.ldf
+*.sqlite
+*.sqlite3
+*.db

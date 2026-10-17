@@ -1,0 +1,325 @@
+@{
+    ViewData["Title"] = "TOEIC Reading Studio";
+    Layout = null;
+}
+
+<link rel="stylesheet" href="~/css/teacher.css" asp-append-version="true" />
+@Html.AntiForgeryToken()
+<main class="studio">
+    <aside class="sidebar">
+        <a class="brand" href="/">READ<span>WISE</span></a>
+        <p class="eyebrow" data-i18n="WORKSPACE">WORKSPACE</p>
+        <a class="nav-item active" href="/" data-i18n="Overview">Overview</a>
+        <a class="nav-item" href="#exam-list" data-i18n="Exam library">Exam library</a>
+        <div class="sidebar-note">
+            <span class="note-icon">75</span>
+            <p><strong data-i18n="TOEIC Reading">TOEIC Reading</strong><br /><span data-i18n="100 questions · 75 minutes">100 questions · 75 minutes</span></p>
+        </div>
+        <div class="profile"><span class="avatar">TN</span><span><strong data-i18n="Teacher">Teacher</strong><small data-i18n="Exam manager">Exam manager</small></span></div>
+    </aside>
+
+    <section class="main-content">
+        <header class="topbar">
+            <span><span data-i18n="Workspace">Workspace</span> <b>/</b> <span data-i18n="Overview">Overview</span></span>
+            <button class="secondary-button" id="language-toggle" type="button" aria-label="Change language">VI</button>
+            <span class="connection"><i></i> SQL Server workspace</span>
+        </header>
+        <div class="heading-row">
+            <div>
+                <p class="eyebrow" data-i18n="WORKSPACE / OVERVIEW">WORKSPACE / OVERVIEW</p>
+                <h1><span data-i18n="Good morning, Teacher">Good morning, Teacher</span> <span>✦</span></h1>
+                <p class="subheading" data-i18n="Prepare, publish, and review your Reading exams.">Prepare, publish, and review your Reading exams.</p>
+            </div>
+            <button class="primary-button" id="upload-trigger" data-i18n="＋ Import a Word exam">＋ Import a Word exam</button>
+            <input id="exam-file" type="file" accept=".docx" hidden />
+        </div>
+
+        <div class="stats-grid">
+            <article class="stat-card"><span class="stat-icon violet">▤</span><span class="stat-label" data-i18n="TOTAL EXAMS">TOTAL EXAMS</span><strong id="exam-count">—</strong><small data-i18n="In your library">In your library</small></article>
+            <article class="stat-card"><span class="stat-icon mint">↗</span><span class="stat-label" data-i18n="PUBLISHED">PUBLISHED</span><strong id="published-count">—</strong><small data-i18n="Available to learners">Available to learners</small></article>
+            <article class="stat-card"><span class="stat-icon amber">◷</span><span class="stat-label" data-i18n="ATTEMPTS">ATTEMPTS</span><strong id="attempt-count">—</strong><small data-i18n="Across all exams">Across all exams</small></article>
+            <article class="stat-card"><span class="stat-icon blue">◎</span><span class="stat-label" data-i18n="AVERAGE SCORE">AVERAGE SCORE</span><strong id="average-score">—</strong><small data-i18n="Completed attempts">Completed attempts</small></article>
+        </div>
+
+        <section class="panel" id="exam-list">
+            <div class="panel-heading"><div><h2 data-i18n="Exam library">Exam library</h2><p data-i18n="Review imported content and manage publication.">Review imported content and manage publication.</p></div><span class="count-pill" id="library-count">0 exams</span></div>
+            <div id="notice" class="notice" role="status"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th data-i18n="EXAM">EXAM</th><th data-i18n="QUESTIONS">QUESTIONS</th><th data-i18n="DURATION">DURATION</th><th data-i18n="STATUS">STATUS</th><th data-i18n="ACTIONS">ACTIONS</th></tr></thead>
+                    <tbody id="exam-rows"><tr><td colspan="5" class="empty" data-i18n="Loading your exam library…">Loading your exam library…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel analytics-panel">
+            <div class="panel-heading"><div><h2 data-i18n="Question insights">Question insights</h2><p data-i18n="Top questions learners answer incorrectly.">Top questions learners answer incorrectly.</p></div><select id="analytics-exam"><option value="" data-i18n="Select an exam">Select an exam</option></select></div>
+            <div id="analytics-content" class="empty" data-i18n="Import or select an exam to view analytics.">Import or select an exam to view analytics.</div>
+        </section>
+        <dialog id="preview-dialog" class="preview-dialog">
+            <header class="preview-header">
+                <div><p class="eyebrow" data-i18n="EXAM REVIEW">EXAM REVIEW</p><h2 id="preview-title" data-i18n="Exam preview">Exam preview</h2></div>
+                <button id="close-preview" class="close-preview" type="button" aria-label="Close">×</button>
+            </header>
+            <div id="preview-content" class="preview-content"></div>
+        </dialog>
+        <footer>READWISE <span>·</span> <span data-i18n="TOEIC Reading assessment workspace">TOEIC Reading assessment workspace</span></footer>
+    </section>
+</main>
+
+<script>
+(() => {
+    const $ = (id) => document.getElementById(id);
+    const notice = $('notice');
+    const translations = {
+        'WORKSPACE': 'KHÔNG GIAN LÀM VIỆC',
+        'Overview': 'Tổng quan',
+        'Exam': 'Đề thi',
+        'Exam library': 'Thư viện đề thi',
+        '100 questions · 75 minutes': '100 câu hỏi · 75 phút',
+        'Teacher': 'Giảng viên',
+        'Exam manager': 'Quản lý đề thi',
+        'Workspace': 'Không gian làm việc',
+        'WORKSPACE / OVERVIEW': 'KHÔNG GIAN LÀM VIỆC / TỔNG QUAN',
+        'Good morning, Teacher': 'Chào buổi sáng, Giảng viên',
+        'Prepare, publish, and review your Reading exams.': 'Soạn, đăng và xem lại các đề thi Reading.',
+        '＋ Import a Word exam': '＋ Nhập đề thi Word',
+        'TOTAL EXAMS': 'TỔNG SỐ ĐỀ',
+        'In your library': 'Trong thư viện',
+        'PUBLISHED': 'ĐÃ ĐĂNG',
+        'Available to learners': 'Học viên có thể làm',
+        'ATTEMPTS': 'LƯỢT LÀM BÀI',
+        'Across all exams': 'Trên tất cả đề thi',
+        'AVERAGE SCORE': 'ĐIỂM TRUNG BÌNH',
+        'Completed attempts': 'Các lượt đã hoàn thành',
+        'Review imported content and manage publication.': 'Xem nội dung đã nhập và quản lý trạng thái đăng.',
+        'EXAM': 'ĐỀ THI',
+        'QUESTIONS': 'CÂU HỎI',
+        'DURATION': 'THỜI LƯỢNG',
+        'STATUS': 'TRẠNG THÁI',
+        'ACTIONS': 'THAO TÁC',
+        'Loading your exam library…': 'Đang tải thư viện đề thi…',
+        'Question insights': 'Thống kê câu hỏi',
+        'Top questions learners answer incorrectly.': 'Các câu hỏi học viên trả lời sai nhiều nhất.',
+        'Select an exam': 'Chọn đề thi',
+        'Import or select an exam to view analytics.': 'Nhập hoặc chọn đề thi để xem thống kê.',
+        'EXAM REVIEW': 'XEM LẠI ĐỀ THI',
+        'Exam preview': 'Xem trước đề thi',
+        'TOEIC Reading assessment workspace': 'Không gian đánh giá TOEIC Reading',
+        'Published': 'Đã đăng',
+        'Draft': 'Bản nháp',
+        'Preview': 'Xem trước',
+        'Edit': 'Chỉnh sửa',
+        'Unpublish': 'Hủy đăng',
+        'Publish': 'Đăng đề',
+        'Insights': 'Thống kê',
+        'No exams yet. Import a tagged .docx file to get started.': 'Chưa có đề thi. Hãy nhập tệp .docx đúng định dạng để bắt đầu.',
+        ' exams': ' đề thi',
+        ' exam': ' đề thi',
+        ' questions': ' câu hỏi',
+        ' min': ' phút',
+        'Request failed': 'Yêu cầu thất bại',
+        'Publication status updated.': 'Đã cập nhật trạng thái đăng.',
+        ' imported with ': ' đã được nhập với ',
+        'No submitted attempts yet.': 'Chưa có lượt làm bài nào được nộp.',
+        ' misses': ' lượt trả lời sai',
+        'Edit: ': 'Chỉnh sửa: ',
+        'Exam title': 'Tên đề thi',
+        'Duration (minutes)': 'Thời lượng (phút)',
+        'Save exam details': 'Lưu thông tin đề thi',
+        'Part ': 'Phần ',
+        'Passage ': 'Đoạn văn ',
+        'Save passage': 'Lưu đoạn văn',
+        'Exam details saved.': 'Đã lưu thông tin đề thi.',
+        ' saved.': ' đã lưu.',
+        'Question ': 'Câu hỏi ',
+        'Save question': 'Lưu câu hỏi',
+        'Question text': 'Nội dung câu hỏi',
+        'Correct answer': 'Đáp án đúng',
+        'Answer hint': 'Gợi ý đáp án'
+    };
+    let language = localStorage.getItem('readwise-teacher-language') || 'en';
+    const tr = value => language === 'vi' ? (translations[value] || value) : value;
+    const applyLanguage = () => {
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            element.textContent = tr(element.dataset.i18n);
+        });
+        $('language-toggle').textContent = language === 'en' ? 'VI' : 'EN';
+        $('language-toggle').setAttribute('aria-label',
+            language === 'en' ? 'Chuyển sang tiếng Việt' : 'Switch to English');
+        document.documentElement.lang = language;
+    };
+    let exams = [];
+    const showNotice = (message, isError = false) => {
+        notice.textContent = message;
+        notice.className = `notice visible ${isError ? 'error' : 'success'}`;
+    };
+    const request = async (url, options) => {
+        const headers = new Headers(options?.headers);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            headers.set('RequestVerificationToken', token);
+            headers.set('X-XSRF-TOKEN', token);
+        }
+        const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+        if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.errors?.join(' ') || body.error || `Request failed (${response.status}).`);
+        }
+        return response.status === 204 ? null : response.json();
+    };
+    const renderEmbeddedImages = content =>
+        [...content.matchAll(/\{\{IMAGE:(data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+)\}\}/g)]
+            .map(match => `<img src="${match[1]}" alt="Embedded exam image" style="display:block;max-width:100%;max-height:320px;object-fit:contain;margin:8px 0">`)
+            .join('');
+    const loadExams = async () => {
+        try {
+            exams = await request('/api/admin/exams');
+            $('exam-count').textContent = exams.length;
+            $('published-count').textContent = exams.filter(exam => exam.isPublished).length;
+            $('library-count').textContent = `${exams.length}${tr(exams.length === 1 ? ' exam' : ' exams')}`;
+            $('exam-rows').innerHTML = exams.length ? exams.map(exam => `
+                <tr>
+                    <td><strong>${escapeHtml(exam.title)}</strong><small>TOEIC Reading · ${tr('Exam')} #${exam.id}</small></td>
+                    <td>${exam.questionCount}${tr(' questions')}</td>
+                    <td>${exam.durationMinutes}${tr(' min')}</td>
+                    <td><span class="status ${exam.isPublished ? 'live' : 'draft'}">${tr(exam.isPublished ? 'Published' : 'Draft')}</span></td>
+                    <td class="actions"><button data-preview="${exam.id}">${tr('Preview')}</button><button data-edit="${exam.id}">${tr('Edit')}</button><button data-publish="${exam.id}" data-state="${exam.isPublished}">${tr(exam.isPublished ? 'Unpublish' : 'Publish')}</button><button data-analytics="${exam.id}">${tr('Insights')}</button></td>
+                </tr>`).join('') : `<tr><td colspan="5" class="empty">${tr('No exams yet. Import a tagged .docx file to get started.')}</td></tr>`;
+            $('analytics-exam').innerHTML = `<option value="">${tr('Select an exam')}</option>` +
+                exams.map(exam => `<option value="${exam.id}">${escapeHtml(exam.title)}</option>`).join('');
+            $('exam-rows').querySelectorAll('[data-publish]').forEach(button => button.addEventListener('click', async () => {
+                const id = button.dataset.publish;
+                try {
+                    await request(`/api/admin/exams/${id}/publish`, {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isPublished: button.dataset.state !== 'true' })
+                    });
+                    showNotice('Publication status updated.');
+                    await loadExams();
+                } catch (error) { showNotice(error.message, true); }
+            }));
+            $('exam-rows').querySelectorAll('[data-analytics]').forEach(button => button.addEventListener('click', () => loadAnalytics(button.dataset.analytics)));
+            $('exam-rows').querySelectorAll('[data-preview]').forEach(button => button.addEventListener('click', () => previewExam(button.dataset.preview)));
+            $('exam-rows').querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => previewExam(button.dataset.edit, true)));
+        } catch (error) { showNotice(error.message, true); }
+    };
+    const escapeHtml = value => value.replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+    $('language-toggle').addEventListener('click', () => {
+        language = language === 'en' ? 'vi' : 'en';
+        localStorage.setItem('readwise-teacher-language', language);
+        applyLanguage();
+        loadExams();
+    });
+    $('upload-trigger').addEventListener('click', () => $('exam-file').click());
+    $('exam-file').addEventListener('change', async event => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append('file', file);
+        try {
+            const result = await request('/api/admin/exams/import', { method: 'POST', body: form });
+            const questionCountText = language === 'vi'
+                ? `${result.questionCount} câu hỏi.`
+                : `${result.questionCount} ${result.questionCount === 1 ? 'question' : 'questions'}.`;
+            showNotice(`${result.title}${tr(' imported with ')}${questionCountText}`);
+            await loadExams();
+        } catch (error) { showNotice(error.message, true); }
+        finally { event.target.value = ''; }
+    });
+    $('analytics-exam').addEventListener('change', event => event.target.value && loadAnalytics(event.target.value));
+    async function loadAnalytics(id) {
+        try {
+            const data = await request(`/api/admin/exams/${id}/analytics`);
+            $('attempt-count').textContent = data.attemptCount;
+            $('average-score').textContent = data.averageScore == null ? '—' : `${Math.round(data.averageScore)} / 100`;
+            $('analytics-content').innerHTML = data.mostMissedQuestions.length
+                ? `<ol class="missed-list">${data.mostMissedQuestions.map(item => `<li><span class="question-number">${item.number}</span><span>${escapeHtml(item.prompt)}</span><strong>${item.incorrectCount}${tr(' misses')}</strong></li>`).join('')}</ol>`
+                : `<div class="empty">${tr('No submitted attempts yet.')}</div>`;
+        } catch (error) { showNotice(error.message, true); }
+    }
+    async function previewExam(id, editMode = false) {
+        try {
+            const exam = await request(`/api/admin/exams/${id}`);
+            $('preview-title').textContent = editMode ? `${tr('Edit: ')}${exam.title}` : exam.title;
+            $('preview-content').innerHTML = `
+                <div class="edit-exam">
+                    <label>${tr('Exam title')}<input id="edit-exam-title" value="${escapeHtml(exam.title)}" ${editMode ? '' : 'disabled'}></label>
+                    <label>${tr('Duration (minutes)')}<input id="edit-exam-duration" type="number" min="1" value="${exam.durationMinutes}" ${editMode ? '' : 'disabled'}></label>
+                    ${editMode ? `<button id="save-exam-details" class="primary-button">${tr('Save exam details')}</button>` : ''}
+                </div>
+                ${exam.parts.map(part => `
+                    <section class="preview-part">
+                        <h3>${tr('Part ')}${part.number}</h3>
+                        ${part.passages.map(passage => `
+                            <div class="preview-passage">
+                                <h4>${tr('Passage ')}${escapeHtml(passage.sourceId)}</h4>
+                                <textarea data-passage="${escapeHtml(passage.sourceId)}" rows="5" ${editMode ? '' : 'disabled'}>${escapeHtml(passage.content)}</textarea>
+                                ${renderEmbeddedImages(passage.content)}
+                                ${editMode ? `<button class="secondary-button" data-save-passage="${escapeHtml(passage.sourceId)}">${tr('Save passage')}</button>` : ''}
+                                ${passage.questions.map(question => renderQuestion(question, editMode)).join('')}
+                            </div>`).join('')}
+                        ${part.questions.map(question => renderQuestion(question, editMode)).join('')}
+                    </section>`).join('')}`;
+            $('preview-dialog').showModal();
+            if (!editMode) return;
+            $('save-exam-details').addEventListener('click', async () => {
+                try {
+                    await request(`/api/admin/exams/${id}`, {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: $('edit-exam-title').value,
+                            durationMinutes: Number($('edit-exam-duration').value)
+                        })
+                    });
+                    showNotice(tr('Exam details saved.'));
+                    $('preview-title').textContent = $('edit-exam-title').value;
+                    await loadExams();
+                } catch (error) { showNotice(error.message, true); }
+            });
+            $('preview-content').querySelectorAll('[data-save-passage]').forEach(button => button.addEventListener('click', async () => {
+                const sourceId = button.dataset.savePassage;
+                const content = $('preview-content').querySelector(`[data-passage="${CSS.escape(sourceId)}"]`).value;
+                try {
+                    await request(`/api/admin/exams/${id}/passages/${encodeURIComponent(sourceId)}`, {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content })
+                    });
+                    showNotice(`${tr('Passage ')}${sourceId}${tr(' saved.')}`);
+                } catch (error) { showNotice(error.message, true); }
+            }));
+            $('preview-content').querySelectorAll('[data-save-question]').forEach(button => button.addEventListener('click', async () => {
+                const number = button.dataset.saveQuestion;
+                const fields = [...$('preview-content').querySelectorAll(`[data-question="${number}"]`)];
+                const prompt = fields.find(field => field.dataset.field === 'prompt').value;
+                const hint = fields.find(field => field.dataset.field === 'hint').value;
+                const correctChoiceKey = fields.find(field => field.dataset.field === 'answer').value;
+                const choices = ['A', 'B', 'C', 'D'].map(key => ({
+                    key,
+                    content: fields.find(field => field.dataset.choice === key).value
+                }));
+                try {
+                    await request(`/api/admin/exams/${id}/questions/${number}`, {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, hint, correctChoiceKey, choices })
+                    });
+                    showNotice(`${tr('Question ')}${number}${tr(' saved.')}`);
+                } catch (error) { showNotice(error.message, true); }
+            }));
+        } catch (error) { showNotice(error.message, true); }
+    }
+    function renderQuestion(question, editMode) {
+        return `<article class="question-editor" data-question-editor="${question.number}">
+            <div class="question-editor-title"><strong>${tr('Question ')}${question.number}</strong>${editMode ? `<button class="secondary-button" data-save-question="${question.number}">${tr('Save question')}</button>` : ''}</div>
+            <label>${tr('Question text')}<textarea rows="2" data-question="${question.number}" data-field="prompt" ${editMode ? '' : 'disabled'}>${escapeHtml(question.prompt)}</textarea></label>
+            ${renderEmbeddedImages(question.prompt)}
+            <div class="choice-editor">${question.choices.map(choice => `<label>${choice.key}<input data-question="${question.number}" data-choice="${choice.key}" value="${escapeHtml(choice.content)}" ${editMode ? '' : 'disabled'}>${renderEmbeddedImages(choice.content)}</label>`).join('')}</div>
+            <label>${tr('Correct answer')}<select data-question="${question.number}" data-field="answer" ${editMode ? '' : 'disabled'}>${['A', 'B', 'C', 'D'].map(key => `<option value="${key}" ${question.correctChoiceKey === key ? 'selected' : ''}>${key}</option>`).join('')}</select></label>
+            <label>${tr('Answer hint')}<textarea rows="2" data-question="${question.number}" data-field="hint" ${editMode ? '' : 'disabled'}>${escapeHtml(question.hint)}</textarea></label>
+        </article>`;
+    }
+    $('close-preview').addEventListener('click', () => $('preview-dialog').close());
+    applyLanguage();
+    loadExams();
+})();
+</script>
