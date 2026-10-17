@@ -34,18 +34,55 @@ public sealed class ExamsController(
     public async Task<ActionResult<StudentExamDto>> GetPublished(int examId, CancellationToken cancellationToken)
     {
         var exam = await db.Exams
+            .AsNoTracking()
             .Where(item => item.Id == examId && item.IsPublished)
-            .Include(item => item.Parts)
-                .ThenInclude(part => part.Questions)
-                    .ThenInclude(question => question.Choices)
-            .Include(item => item.Parts)
-                .ThenInclude(part => part.Passages)
-                    .ThenInclude(passage => passage.Questions)
-                        .ThenInclude(question => question.Choices)
-            .AsSplitQuery()
             .SingleOrDefaultAsync(cancellationToken);
         if (exam is null)
             return NotFound();
+
+        var parts = await db.ExamParts
+            .AsNoTracking()
+            .Where(part => part.ExamId == exam.Id)
+            .ToListAsync(cancellationToken);
+        var partIds = parts.Select(part => part.Id).ToArray();
+        if (partIds.Length == 0)
+            return Ok(StudentExamDto.From(exam));
+
+        var passages = await db.Passages
+            .AsNoTracking()
+            .Where(passage => partIds.Contains(passage.ExamPartId))
+            .ToListAsync(cancellationToken);
+        var questions = await db.Questions
+            .AsNoTracking()
+            .Where(question => partIds.Contains(question.ExamPartId))
+            .ToListAsync(cancellationToken);
+        var questionIds = questions.Select(question => question.Id).ToArray();
+        var choices = questionIds.Length == 0
+            ? []
+            : await db.Choices
+                .AsNoTracking()
+                .Where(choice => questionIds.Contains(choice.ExamQuestionId))
+                .ToListAsync(cancellationToken);
+
+        var choicesByQuestion = choices.ToLookup(choice => choice.ExamQuestionId);
+        foreach (var question in questions)
+            question.Choices = choicesByQuestion[question.Id].ToList();
+
+        var questionsByPassage = questions
+            .Where(question => question.PassageId.HasValue)
+            .ToLookup(question => question.PassageId!.Value);
+        foreach (var passage in passages)
+            passage.Questions = questionsByPassage[passage.Id].ToList();
+
+        var questionsByPart = questions.ToLookup(question => question.ExamPartId);
+        var passagesByPart = passages.ToLookup(passage => passage.ExamPartId);
+        foreach (var part in parts)
+        {
+            part.Questions = questionsByPart[part.Id].ToList();
+            part.Passages = passagesByPart[part.Id].ToList();
+        }
+
+        exam.Parts = parts;
         return Ok(StudentExamDto.From(exam));
     }
 
